@@ -1,0 +1,5 @@
+__pycache__/
+.gitattributes/
+.venv/
+test.py
+
