@@ -4,6 +4,7 @@ from scipy.stats import norm
 from statsmodels.tsa.stattools import acovf
 from .RTR import RTR
 from typing import Literal
+from . import indicator
 
 
 def _SRTR_iid(RTR: pd.Series, N: int = 1000, expand: bool = False, n: int = 14, full: bool = False):
@@ -21,9 +22,9 @@ def _SRTR_iid(RTR: pd.Series, N: int = 1000, expand: bool = False, n: int = 14, 
     # 3. Historical rolling mu/sigma
     if expand:
         df['mu_N'] = np.nan
-        df['mu_N'].iloc[N-1:] = df['log_RTR'].iloc[N-1:].expanding().mean()
+        df.loc[df.index[N-1:], 'mu_N'] = df['log_RTR'].iloc[N-1:].expanding().mean()
         df['sigma'] = np.nan
-        df['sigma'].iloc[N-1:] = df['log_RTR'].iloc[N-1:].expanding().std(ddof=1)
+        df.loc[df.index[N-1:], 'sigma'] = df['log_RTR'].iloc[N-1:].expanding().std(ddof=1)
     else:
         df['mu_N'] = df['log_RTR'].rolling(window=N).mean()
         df['sigma'] = df['log_RTR'].rolling(window=N).std(ddof=1)
@@ -79,9 +80,17 @@ def _hac_variance(hist: np.ndarray, mu: float, L: int, n: int) -> float:
 def _SRTR_cluster(RTR: pd.Series, N: int = 1000, expand: bool = False, n: int = 14, L: int = None, full: bool = False):
     """
     Volatility metric using rolling arithmetic mean of log(RTR) with HAC / Newey-West adjustment.
+
+    Notes
+    -----
+    Compatible with pandas 3.0: Uses .loc indexing to avoid chained assignment warnings.
     """
     if L is None:
         L = n - 1
+    if not isinstance(L, int) or L <= 0:
+        raise ValueError("L must be a positive integer.")
+    if L > N - 1:
+        raise ValueError("L must be <= N-1.")
 
     df = pd.DataFrame({"RTR": RTR})
 
@@ -94,14 +103,14 @@ def _SRTR_cluster(RTR: pd.Series, N: int = 1000, expand: bool = False, n: int = 
     # 3. Long-term mean (rolling or expanding after N)
     if expand:
         df['mu_N'] = np.nan
-        df['mu_N'].iloc[N-1:] = df['log_RTR'].iloc[N-1:].expanding().mean()
+        df.loc[df.index[N-1:], 'mu_N'] = df['log_RTR'].iloc[N-1:].expanding().mean()
 
         # Vectorized HAC variance for expanding windows
         temp = df['log_RTR'].iloc[N-1:].expanding(min_periods=n).apply(
             lambda w: np.sqrt(_hac_variance(w.values, np.mean(w.values), L, n))
         )
         df['sigma'] = np.nan
-        df['sigma'].iloc[N-1:] = temp
+        df.loc[df.index[N-1:], 'sigma'] = temp
     else:
         df['mu_N'] = df['log_RTR'].rolling(window=N).mean()
 
@@ -112,7 +121,7 @@ def _SRTR_cluster(RTR: pd.Series, N: int = 1000, expand: bool = False, n: int = 
 
     # Match original NaN placement for consistency
     start_idx = (N - 1 if expand else N - 1) + (n - 1)
-    df['sigma'].iloc[:start_idx] = np.nan
+    df.loc[df.index[:start_idx], 'sigma'] = np.nan
 
     # 4. Z-score where all components are available
     mask = df['mu_n'].notna() & df['mu_N'].notna() & df['sigma'].notna()
@@ -122,12 +131,14 @@ def _SRTR_cluster(RTR: pd.Series, N: int = 1000, expand: bool = False, n: int = 
     # 5. Percentile
     df['p'] = norm.cdf(df['z_score'])
 
-    if full:
-        return df[["RTR", "mu_N", "sigma", "mu_n", "z_score", "p"]]
-    else:
+    if not full:
         return df['p']
+    else:
+        return df[["RTR", "mu_N", "sigma", "mu_n", "z_score", "p"]]
 
 
+
+@indicator
 def SRTR(
     High: pd.Series,
     Low: pd.Series,
@@ -140,48 +151,54 @@ def SRTR(
     full: bool = False
     ):
     """
-    Standardize rolling mean of log(True Range) using either i.i.d. or HAC/Newey-West adjustment.
+    Standardized Relative True Range (SRTR).
 
-    This function computes a volatility metric by standardizing the short-term rolling mean of log(True Range)
-    against its long-term mean and standard deviation, using either the i.i.d. assumption or a HAC/Newey-West
-    estimator to account for autocorrelation.
-
-    Steps:
-        1. Log-transform the relative true range to approximate normality.
-        2. Compute a short-term rolling mean (mu_n) of log(RTR) over n periods.
-        3. Compute a long-term rolling mean (mu_N) and standard deviation (sigma) of log(RTR) over N periods.
-        4. Standardize mu_n using the long-term mean and standard deviation:
-            - If method="iid": sigma is rescaled by sqrt(n).
-            - If method="autocorr": sigma is estimated using a HAC/Newey-West estimator with truncation lag L.
-        5. Map the z-score to its percentile under the standard normal distribution.
+    Calculates a standardized volatility metric of the relative true range.
+    Standardizes the short-term rolling mean against long-term historical mean
+    and standard deviation of log(Relative True Range) using either the i.i.d.
+    assumption or a HAC/Newey-West estimator.
 
     Parameters
     ----------
-        High : pd.Series
-            Series of high prices.
-        Low : pd.Series
-            Series of low prices.
-        Close : pd.Series
-            Series of close prices.
-        N : int, optional
-            Window size for historical mean and standard deviation (default=1000).
-        expand : bool, optional
-            If True, use expanding window for long-term mean and std (default=False).
-        n : int, optional
-            Window size for short-term rolling mean (default=10).
-        method : Literal['iid', 'cluster'], optional
-            "iid" for independent assumption, "cluster" for HAC/Newey-West adjustment (default="cluster").
-        L : int, optional
-            Truncation lag for HAC estimator (only used if method="cluster").
-        full : bool, optional
-            If True, return full DataFrame with intermediate values; if False, return only percentiles (default=False).
+    expand : bool, optional
+        If True, use expanding window after initial N periods for long-term mean and std, 
+        allowing adaptation to changing volatility. If False, use fixed rolling window of size N. Default is False.
+    n : int, optional
+        Window size for short-term rolling mean. Default is 14.
+    method : {'iid', 'cluster'}, optional
+        Method for variance estimation. 'iid' for independent assumption,
+        'cluster' for HAC/Newey-West adjustment. Default is 'cluster'.
+    L : int, optional
+        Truncation lag for HAC estimator (only used if method='cluster').
+        Default is None (uses n-1).
+    full : bool, optional
+        If True, return full DataFrame with all intermediate calculations (RTR, mu_N, sigma, mu_n, z_score, p); 
+        if False, return only the percentile series. Default is False.
 
     Returns
     -------
-        if full is True:
-            pd.DataFrame with columns:
-        if full is False:
-            pd.Series of percentiles.
+    SRTR : pd.Series or pd.DataFrame
+        If full is False, returns pd.Series of percentiles.
+        If full is True, returns pd.DataFrame with columns: RTR, mu_N, sigma, mu_n, z_score, p.
+
+    Notes
+    -----
+    Requires DataFrame columns: 'High', 'Low', 'Close'.
+    
+    The SRTR standardizes volatility by computing z-scores of short-term volatility
+    relative to long-term historical levels. The method parameter controls how
+    autocorrelation in the data is handled:
+    
+    - 'iid': Assumes independent observations, rescales sigma by sqrt(n)
+    - 'cluster': Uses HAC/Newey-West estimator to account for autocorrelation
+    
+    The function maps z-scores to percentiles under the standard normal distribution,
+    providing a normalized volatility measure comparable across different time periods.
+
+    Examples
+    --------
+    >>> df.ti.SRTR(N=1000, n=14, method='cluster')
+    >>> df.ti.SRTR(N=500, expand=True, full=True)
     """
     rtr = RTR(High, Low, Close)
 

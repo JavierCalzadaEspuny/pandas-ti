@@ -1,27 +1,32 @@
 import pandas as pd
+from . import indicator
 
+
+@indicator
 def TR(High: pd.Series, Low: pd.Series, Close: pd.Series) -> pd.Series:
     """
-    True Range (TR) is a volatility indicator that measures the range of price movement for each session.
+    True Range (TR).
 
-    It is calculated as the maximum of three values:
-        1. The difference between the current high and the current low.
-        2. The absolute difference between the current high and the previous close.
-        3. The absolute difference between the current low and the previous close.
-
-    Parameters
-    ----------
-        High: pd.Series: 
-            Series of high prices.
-        Low: pd.Series: 
-            Series of low prices.
-        Close: pd.Series: 
-            Series of close prices.
+    Calculates the true range as a measure of price movement volatility.
+    The TR is the maximum of three values: the difference between the current
+    high and low, the absolute difference between the current high and previous
+    close, or the absolute difference between the current low and previous close.
 
     Returns
     -------
-        TR: pd.Series: 
-            Series of true range values.
+    TR : pd.Series
+        Series of true range values.
+
+    Notes
+    -----
+    Requires DataFrame columns: 'High', 'Low', 'Close'.
+    
+    The TR captures the full range of price movement, including potential gaps
+    between periods, making it a foundational component for volatility indicators.
+
+    Examples
+    --------
+    >>> df.ti.TR()
     """
     High = High.astype(float)
     Low = Low.astype(float)

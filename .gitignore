@@ -1,5 +1,8 @@
 __pycache__/
-.gitattributes/
+*.pyc
 .venv/
+.gitattributes
+dist/
+build/
+*.egg-info/
 test.py
-
