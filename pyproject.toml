@@ -12,22 +12,18 @@ keywords = ["pandas", "technical-indicators", "trading", "finance"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
-    "pandas>=2.0",
-    "numpy>=1.22",
-    "scipy>=1.10",
-    "statsmodels>=0.14",
+    "pandas>=2.3.3",
+    "numpy>=2.3.3",
+    "scipy>=1.16.2",
+    "statsmodels>=0.14.5",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "yfinance>=0.2",
+    "yfinance>=0.2.66",
 ]
 
 [build-system]

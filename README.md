@@ -125,10 +125,13 @@ df.ti.set_column_mapping({
 - Python >= 3.9
 
 ### Dependencies
-- pandas >= 2.0
-- numpy >= 1.22
-- scipy >= 1.10
-- statsmodels >= 0.14
+- pandas >= 2.3.3
+- numpy >= 2.3.3
+- scipy >= 1.16.2
+- statsmodels >= 0.14.5
+
+### Development Dependencies
+- yfinance >= 0.2.66 (for examples and testing)
 
 ## License
 
