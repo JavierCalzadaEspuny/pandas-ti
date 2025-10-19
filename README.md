@@ -91,9 +91,6 @@ The following technical indicators are currently implemented:
 | **SRTR** | Standardized Relative True Range - Statistical standardization of Relative True Range for advanced volatility analysis |
 
 ## Technical Details
-```
-
-## Technical Details
 
 ### Supported Columns
 
