@@ -58,8 +58,6 @@ print(df.ti.available_indicators)
 # View documentation for a specific indicator
 df.ti.help('ATR')
 
-# View all available indicators
-df.ti.help()
 ```
 
 ### Complete Example
@@ -77,7 +75,22 @@ df['TR'] = df.ti.TR()
 df['ATR_14'] = df.ti.ATR(length=14)
 df['ATR_14'] = df.ti.ATR(length=14)
 
-print(df[['TR', 'ATR_14', 'ATR_14']].tail())
+print(df[['Close', 'TR', 'ATR_14', 'ATR_21']].tail())
+```
+
+## Current Supported Indicators
+
+The following technical indicators are currently implemented:
+
+| Indicator | Description |
+|-----------|-------------|
+| **TR** | True Range - Measures price movement volatility as the maximum of current high-low, high-previous close, or previous close-low |
+| **ATR** | Average True Range - Rolling average of True Range over a specified window, useful for measuring volatility |
+| **RTR** | Relative True Range - Normalized True Range expressed as a percentage of previous close price |
+| **ARTR** | Average Relative True Range - Rolling average of Relative True Range for normalized volatility comparison |
+| **SRTR** | Standardized Relative True Range - Statistical standardization of Relative True Range for advanced volatility analysis |
+
+## Technical Details
 ```
 
 ## Technical Details
