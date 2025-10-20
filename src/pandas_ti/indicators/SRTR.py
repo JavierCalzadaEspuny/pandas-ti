@@ -24,10 +24,10 @@ def _SRTR_iid(RTR: pd.Series, N: int = 1000, expand: bool = False, n: int = 14, 
         df['mu_N'] = np.nan
         df.loc[df.index[N-1:], 'mu_N'] = df['log_RTR'].iloc[N-1:].expanding().mean()
         df['sigma'] = np.nan
-        df.loc[df.index[N-1:], 'sigma'] = df['log_RTR'].iloc[N-1:].expanding().std(ddof=1)
+        df.loc[df.index[N-1:], 'sigma'] = df['log_RTR'].iloc[N-1:].expanding().std()
     else:
         df['mu_N'] = df['log_RTR'].rolling(window=N).mean()
-        df['sigma'] = df['log_RTR'].rolling(window=N).std(ddof=1)
+        df['sigma'] = df['log_RTR'].rolling(window=N).std()
 
     # 4. Z-score and percentile
     df['z_score'] = (df['mu_n'] - df['mu_N']) / (df['sigma'] / np.sqrt(n))
@@ -77,7 +77,7 @@ def _hac_variance(hist: np.ndarray, mu: float, L: int, n: int) -> float:
     return variance
 
 
-def _SRTR_cluster(RTR: pd.Series, N: int = 1000, expand: bool = False, n: int = 14, L: int = None, full: bool = False):
+def _SRTR_cluster(RTR: pd.Series, N: int = 1000, expand: bool = True, n: int = 14, L: int = None, full: bool = False):
     """
     Volatility metric using rolling arithmetic mean of log(RTR) with HAC / Newey-West adjustment.
 
@@ -102,20 +102,15 @@ def _SRTR_cluster(RTR: pd.Series, N: int = 1000, expand: bool = False, n: int = 
 
     # 3. Long-term mean (rolling or expanding after N)
     if expand:
-        df['mu_N'] = np.nan
-        df.loc[df.index[N-1:], 'mu_N'] = df['log_RTR'].iloc[N-1:].expanding().mean()
-
-        # Vectorized HAC variance for expanding windows
-        temp = df['log_RTR'].iloc[N-1:].expanding(min_periods=n).apply(
+        # Expansive window after initial N periods
+        df['mu_N'] = df['log_RTR'].expanding(min_periods=N).mean()
+        df['sigma'] = df['log_RTR'].expanding(min_periods=N).apply(
             lambda w: np.sqrt(_hac_variance(w.values, np.mean(w.values), L, n))
         )
-        df['sigma'] = np.nan
-        df.loc[df.index[N-1:], 'sigma'] = temp
     else:
-        df['mu_N'] = df['log_RTR'].rolling(window=N).mean()
-
-        # Vectorized HAC variance for rolling windows
-        df['sigma'] = df['log_RTR'].rolling(window=N).apply(
+        # Fixed-size rolling window of N
+        df['mu_N'] = df['log_RTR'].rolling(window=N, min_periods=N).mean()
+        df['sigma'] = df['log_RTR'].rolling(window=N, min_periods=N).apply(
             lambda w: np.sqrt(_hac_variance(w.values, np.mean(w.values), L, n))
         )
 
@@ -144,7 +139,7 @@ def SRTR(
     Low: pd.Series,
     Close: pd.Series,
     N: int = 1000,
-    expand: bool = False,
+    expand: bool = True,
     n: int = 14,
     method: Literal['iid', 'cluster'] = "cluster",
     L: int = None,
@@ -162,7 +157,7 @@ def SRTR(
     ----------
     expand : bool, optional
         If True, use expanding window after initial N periods for long-term mean and std, 
-        allowing adaptation to changing volatility. If False, use fixed rolling window of size N. Default is False.
+        allowing adaptation to changing volatility. If False, use fixed rolling window of size N. Default is True.
     n : int, optional
         Window size for short-term rolling mean. Default is 14.
     method : {'iid', 'cluster'}, optional
@@ -198,7 +193,7 @@ def SRTR(
     Examples
     --------
     >>> df.ti.SRTR(N=1000, n=14, method='cluster')
-    >>> df.ti.SRTR(N=500, expand=True, full=True)
+    >>> df.ti.SRTR(N=500, expand=False, full=True)
     """
     rtr = RTR(High, Low, Close)
 

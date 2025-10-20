@@ -24,6 +24,12 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "yfinance>=0.2.66",
+    "matplotlib>=3.10.7",
+    "mplfinance>=0.12.10b0",
+    "jupyterlab>=4.4.9",
+    "ipykernel>=7.0.1",
+    "notebook>=7.4.7",
+    "ipython>=9.6.0",
 ]
 
 [build-system]
