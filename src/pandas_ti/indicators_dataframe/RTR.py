@@ -1,31 +1,34 @@
 import pandas as pd
-from . import indicator
+from ..registry import register_indicator
 
-
-@indicator
+@register_indicator(ti_type='dataframe', extended_name='Relative True Range')
 def RTR(High: pd.Series, Low: pd.Series, Close: pd.Series) -> pd.Series:
     """
-    Relative True Range (RTR).
+    Relative True Range (RTR)
 
-    Calculates the relative true range as a normalized volatility measure.
-    The RTR expresses true range as a percentage of the previous close price,
-    enabling volatility comparisons across different price levels.
+    Calculates the Relative True Range indicator, a normalized measure of volatility.
+
+    Required Columns
+    ----------------
+    High : pd.Series
+        Series of high prices (Automatically injected).
+    Low : pd.Series
+        Series of low prices (Automatically injected).
+    Close : pd.Series
+        Series of close prices (Automatically injected).
+
+    Parameters
+    ----------
+    None
 
     Returns
     -------
     RTR : pd.Series
         Series containing the relative true range values.
 
-    Notes
-    -----
-    Requires DataFrame columns: 'High', 'Low', 'Close'.
-    
-    By normalizing true range relative to price, the RTR provides a scale-independent
-    measure of volatility useful for comparing securities at different price levels.
-
     Examples
     --------
-    >>> df.ti.RTR()
+    >>> df['RTR'] = df.ti.RTR()
     """
     High = High.astype(float)
     Low = Low.astype(float)

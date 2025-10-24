@@ -1,8 +1,5 @@
 __pycache__/
-*.pyc
 .venv/
-.gitattributes
-dist/
-build/
-*.egg-info/
+.vscode/
 test.ipynb
+*.txt

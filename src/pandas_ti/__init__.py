@@ -1,37 +1,17 @@
-"""
-pandas_ti - Technical Indicators for pandas DataFrames
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+import importlib
+import pkgutil
+from . import indicators_dataframe, indicators_series
+from .accessor_series import SeriesTechnicalIndicatorsAccessor
+from .accessor_dataframe import DataframeTechnicalIndicatorsAccessor
+from .registry import registry_funcs_dict, registry_names_dict
 
-A lightweight, extensible technical indicators library with automatic
-OHLCV column detection and mapping.
 
-Basic usage:
+def auto_import_package(package):
+    """Auto-import in the specified order"""
+    for _, module_name, _ in pkgutil.iter_modules(package.__path__):
+        importlib.import_module(f"{package.__name__}.{module_name}")
 
-   >>> import pandas as pd
-   >>> import pandas_ti
-   >>> df = pd.read_csv('data.csv')
-   >>> df['ATR'] = df.ti.ATR(length=14)
-   >>> df.ti.help()
+auto_import_package(indicators_dataframe)
+auto_import_package(indicators_series)
 
-:copyright: (c) 2025 by Javier Calzada Espuny.
-:license: MIT, see LICENSE for more details.
-"""
-
-import os
-import sys
-import pydoc
-
-__version__ = "0.1.0"
-__author__ = "Javier Calzada Espuny"
-__license__ = "MIT"
-
-# Fix for Windows: Prevent help() from trying to use the 'more' pager
-# This makes help() work seamlessly on Windows systems
-if sys.platform == 'win32':
-    os.environ['PAGER'] = ''
-    # Also override pydoc's pager directly
-    pydoc.pager = pydoc.plainpager
-
-from .accessor import TechnicalIndicatorsAccessor
-
-__all__ = ["TechnicalIndicatorsAccessor", "__version__"]
+__all__ = ['SeriesTechnicalIndicatorsAccessor', 'DataframeTechnicalIndicatorsAccessor', 'registry_funcs_dict', 'registry_names_dict']

@@ -4,142 +4,210 @@
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## Project Description
+A lightweight and extensible technical analysis library for pandas DataFrames and Series.
 
-pandas_ti is a lightweight and extensible technical indicators library for pandas DataFrames. Its main objective is to provide a simple and automated interface for calculating technical indicators on financial data, eliminating the need to manually specify OHLCV (Open, High, Low, Close, Volume) column names.
+## Features
 
-The library is characterized by:
-- Automatic detection of OHLCV columns with multiple naming conventions
-- Automatic indicator registration system using decorators
-- Consistent interface through the `df.ti` accessor
-- Integrated documentation for all indicators
-- Extensible architecture that allows adding new indicators easily
+- **Zero Configuration** - Automatic OHLCV column detection with multiple naming conventions
+- **Pandas Native** - Seamless integration via `.ti` accessor for DataFrames and Series
+- **Self-Documenting** - Built-in help system with rich console output
+- **Extensible** - Easy to add custom indicators with decorator pattern
+- **Fast & Lightweight** - Minimal dependencies, maximum performance
 
-## Installation
+## Quick Start
 
-### From PyPI
+### Installation
+
 ```bash
-pip install pandas_ti
+pip install pandas-ti
 ```
-
-### For Development
-```bash
-git clone https://github.com/JavierCalzadaEspuny/pandas_ti
-cd pandas_ti
-pip install -e .
-```
-
-## Usage
 
 ### Basic Usage
 
 ```python
 import pandas as pd
 import pandas_ti
+import yfinance as yf
 
-# Load data
-df = pd.read_csv('financial_data.csv')
+# Get some market data
+df = yf.Ticker("AAPL").history(period="1y")
 
-# Calculate indicators
-df['TR'] = df.ti.TR()
-df['ATR'] = df.ti.ATR(length=14)
+# DataFrame indicators - automatic OHLCV detection
+df['atr_14'] = df.ti.ATR(n=14)
+df['rtr'] = df.ti.RTR()
+
+# Series indicators - work on any Series
+df['sma_20'] = df['Close'].ti.SMA(n=20)
+df['ema_50'] = df['Close'].ti.EMA(n=50)
+
+print(df[['Close', 'atr_14', 'sma_20', 'ema_50']].tail())
 ```
 
-### Available Indicators List
+### Built-in Help System
 
 ```python
-# View all available indicators
-print(df.ti.available_indicators)
-```
+# List all available indicators
+df.ti.indicators()
 
-### Help and Documentation
-
-```python
-# View documentation for a specific indicator
+# Get detailed help for specific indicator
 df.ti.help('ATR')
 
+# Series indicators help
+df['Close'].ti.help('SMA')
 ```
 
-### Complete Example
+## Available Indicators
+
+### DataFrame Indicators (require OHLCV data)
+
+| Indicator | Description | Parameters |
+|-----------|-------------|------------|
+| **TR** | True Range | None |
+| **ATR** | Average True Range | `n` (window size) |
+| **RTR** | Relative True Range (normalized) | None |
+| **ARTR** | Average Relative True Range | `n` (window size) |
+| **SRTR** | Standardized Relative True Range | `n`, `N=1000`, `expand=True`, `method='cluster'`, `full=False` |
+
+### Series Indicators (work on any Series)
+
+| Indicator | Description | Parameters |
+|-----------|-------------|------------|
+| **SMA** | Simple Moving Average | `n` (window size) |
+| **EMA** | Exponential Moving Average | `n` (span) |
+
+## Examples
+
+### Volatility Analysis
 
 ```python
 import pandas as pd
 import pandas_ti
 import yfinance as yf
 
-# Get data from Yahoo Finance
+# Download data
 df = yf.Ticker("AAPL").history(period="1y")
 
-# Calculate multiple indicators
-df['TR'] = df.ti.TR()
-df['ATR_14'] = df.ti.ATR(length=14)
-df['ATR_14'] = df.ti.ATR(length=14)
+# Calculate volatility indicators
+df['true_range'] = df.ti.TR()
+df['atr_14'] = df.ti.ATR(n=14)
+df['atr_21'] = df.ti.ATR(n=21)
+df['relative_tr'] = df.ti.RTR()
 
-print(df[['Close', 'TR', 'ATR_14', 'ATR_21']].tail())
+# Advanced: Standardized volatility with HAC/Newey-West adjustment
+df['srtr_iid'] = df.ti.SRTR(n=14, method='iid')
+df['srtr_cluster'] = df.ti.SRTR(n=14, method='cluster')
+
+print(df[['Close', 'true_range', 'atr_14', 'relative_tr', 'srtr_cluster']].tail())
 ```
 
-## Current Supported Indicators
+### Moving Averages and Trend Analysis
 
-The following technical indicators are currently implemented:
+```python
+# Multiple timeframe moving averages
+df['sma_10'] = df['Close'].ti.SMA(n=10)
+df['sma_20'] = df['Close'].ti.SMA(n=20)
+df['sma_50'] = df['Close'].ti.SMA(n=50)
 
-| Indicator | Description |
-|-----------|-------------|
-| **TR** | True Range - Measures price movement volatility as the maximum of current high-low, high-previous close, or previous close-low |
-| **ATR** | Average True Range - Rolling average of True Range over a specified window, useful for measuring volatility |
-| **RTR** | Relative True Range - Normalized True Range expressed as a percentage of previous close price |
-| **ARTR** | Average Relative True Range - Rolling average of Relative True Range for normalized volatility comparison |
-| **SRTR** | Standardized Relative True Range - Statistical standardization of Relative True Range for advanced volatility analysis |
+# Exponential moving averages
+df['ema_12'] = df['Close'].ti.EMA(n=12)
+df['ema_26'] = df['Close'].ti.EMA(n=26)
+
+# Golden Cross detection
+df['golden_cross'] = (df['sma_50'] > df['sma_200']).astype(int)
+```
+
+### Custom Column Names
+
+The library automatically detects OHLCV columns regardless of naming convention:
+
+```python
+# All these DataFrames work automatically
+df_yahoo = yf.Ticker("AAPL").history(period="1mo")  # Capital case: Open, High, Low, Close
+df_crypto = ...  # lowercase: open, high, low, close
+df_custom = ...  # Short form: O, H, L, C
+
+# All work the same way
+df_yahoo['atr'] = df_yahoo.ti.ATR(n=14)
+df_crypto['atr'] = df_crypto.ti.ATR(n=14)
+df_custom['atr'] = df_custom.ti.ATR(n=14)
+```
 
 ## Technical Details
 
-### Supported Columns
+### Automatic Column Detection
 
-The library automatically detects OHLCV columns using the following name variations:
+The library automatically detects OHLCV columns using common naming variations:
 
-| Column | Accepted Variations |
-|--------|-------------------|
-| Open   | `Open`, `OPEN`, `open`, `O`, `o` |
-| High   | `High`, `HIGH`, `high`, `H`, `h` |
-| Low    | `Low`, `LOW`, `low`, `L`, `l` |
-| Close  | `Close`, `CLOSE`, `close`, `C`, `c` |
-| Volume | `Volume`, `VOLUME`, `volume`, `Vol`, `vol`, `V`, `v` |
+| Column Type | Accepted Names |
+|-------------|----------------|
+| **Open**    | `Open`, `OPEN`, `open`, `O`, `o` |
+| **High**    | `High`, `HIGH`, `high`, `H`, `h` |
+| **Low**     | `Low`, `LOW`, `low`, `L`, `l` |
+| **Close**   | `Close`, `CLOSE`, `close`, `C`, `c` |
+| **Volume**  | `Volume`, `VOLUME`, `volume`, `Vol`, `vol`, `V`, `v` |
 
-### Custom Column Mapping
+### Indicator Registration
 
-For DataFrames with non-standard column names:
+Adding custom indicators is straightforward:
 
 ```python
-# Configure custom mapping
-df.ti.set_column_mapping({
-    'Open': 'opening_price',
-    'High': 'high_price',
-    'Low': 'low_price',
-    'Close': 'closing_price',
-    'Volume': 'volume_traded'
-})
+from pandas_ti.registry import register_indicator
+
+@register_indicator(ti_type='dataframe', extended_name='My Indicator')
+def MY_INDICATOR(High, Low, Close, n=14):
+    """
+    My custom technical indicator.
+    
+    Parameters
+    ----------
+    n : int, default 14
+        Lookback period
+    """
+    # Your calculation here
+    return result
+```
+
+Once registered, the indicator is automatically available:
+
+```python
+df['my_ind'] = df.ti.MY_INDICATOR(n=20)
 ```
 
 ## Requirements
 
-### System Requirements
-- Python >= 3.9
+### Core Dependencies
+- **Python** >= 3.9
+- **pandas** >= 2.0.0
+- **numpy** >= 1.24.0
+- **rich** >= 13.0.0
 
-### Dependencies
-- pandas >= 2.3.3
-- numpy >= 2.3.3
-- scipy >= 1.16.2
-- statsmodels >= 0.14.5
+### Optional Dependencies
+- **scipy** >= 1.10.0 (for SRTR statistical calculations)
+- **statsmodels** >= 0.14.0 (for HAC/Newey-West estimation)
+- **yfinance** >= 0.2.0 (for examples and testing)
 
-### Development Dependencies
-- yfinance >= 0.2.66 (for examples and testing)
+## Development
+
+```bash
+# Clone the repository
+git clone https://github.com/JavierCalzadaEspuny/pandas_ti
+cd pandas_ti
+
+# Install in development mode
+pip install -e .
+
+# Run tests (if available)
+pytest
+```
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Contact
+## Author
 
 **Javier Calzada Espuny**
 
 - GitHub: [@JavierCalzadaEspuny](https://github.com/JavierCalzadaEspuny)
+- Linkedin: [JavierCalzadaEspuny](https://www.linkedin.com/in/javiercalzadaespuny/)
 - Repository: [pandas_ti](https://github.com/JavierCalzadaEspuny/pandas_ti)
