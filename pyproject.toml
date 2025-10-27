@@ -1,6 +1,6 @@
 [project]
 name = "pandas_ti"
-version = "0.1.0"
+version = "1.0.1"
 description = "A lightweight technical indicators library for pandas DataFrames and Series"
 authors = [
     { name = "Javier Calzada Espuny" }
@@ -9,11 +9,7 @@ license = { text = "MIT" }
 readme = "README.md"
 requires-python = ">=3.12"
 keywords = ["pandas", "technical-indicators", "trading", "finance"]
-classifiers = [
-    "Development Status :: 3 - Alpha",
-    "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3.12",
-]
+
 dependencies = [
     "rich>=14.2.0",
     "pandas>=2.3.3",

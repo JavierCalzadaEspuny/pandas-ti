@@ -3,7 +3,7 @@ import types
 from functools import wraps
 from rich.console import Console
 from rich.panel import Panel
-from test_pandas_ti.registry import registry_funcs_dict, registry_names_dict
+from pandas_ti.registry import registry_funcs_dict, registry_names_dict
 
 # Dictionary of series functions
 series_registry_funcs = registry_funcs_dict['series']

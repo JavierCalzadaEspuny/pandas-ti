@@ -7,22 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2025-10-27
+
+### Fixed
+- Fixed incorrect import references from `test_pandas_ti` to `pandas_ti` in accessor files
+- Resolved critical bug in version 1.0.0 that prevented proper module imports
+- Corrected import statements in `accessor_series.py` and `accessor_dataframe.py`
+
+## [1.0.0] - 2025-10-27
+
 ### Added
 - DataFrame accessor system with `.ti` namespace for technical indicators
 - Series accessor system with `.ti` namespace for series-based indicators
 - Automatic OHLCV column detection and mapping
 - Registry system for managing indicators
 - Built-in help system with `df.ti.help()` and `series.ti.help()`
-- DataFrame volatility indicators:
+- DataFrame indicators:
   - `TR()` - True Range
-  - `ATR(length)` - Average True Range
+  - `ATR(n)` - Average True Range
   - `RTR()` - Relative True Range
-  - `ARTR(length)` - Average Relative True Range
-  - `SRTR(N, expand, n, method, L, full)` - Standardized Relative True Range
+  - `ARTR(n)` - Average Relative True Range
+  - `SRTR(n, N, expand, method, full)` - Standardized Relative True Range
 - Series indicators:
-  - `SMA(length)` - Simple Moving Average
-  - `EMA(length)` - Exponential Moving Average
-- Support for Python 3.9+
+  - `SMA(n)` - Simple Moving Average
+  - `EMA(n)` - Exponential Moving Average
+- Support for Python 3.12+
 - Rich console output for help system
 - Extensible architecture with decorator pattern
 - MIT License
