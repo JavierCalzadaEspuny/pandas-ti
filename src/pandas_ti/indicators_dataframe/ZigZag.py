@@ -308,6 +308,13 @@ def ZigZag(High: pd.Series, Low: pd.Series, pct: float) -> pd.Series:
     >>> df['SMA_High_3'] = df['High'].ti.SMA(n=3)
     >>> df['SMA_Low_3'] = df['Low'].ti.SMA(n=3)
     >>> df['ZZ_Smooth'] = df.ti.ZigZag(High=df['SMA_High_3'], Low=df['SMA_Low_3'], pct=0.05)
+    >>> df['ZZ_Smooth'].dropna()
+    >>> # Through the ZigZag Class for real-time updates
+    >>> from pandas_ti.indicators_dataframe.ZigZag import ZigZagClass
+    >>> zz = ZigZagClass(pct=0.05)
+    >>> for idx, row in df.iterrows():
+    ...     zz.update(high=row['High'], low=row['Low'], idx=idx)
+    >>> pivots = zz.pivots()
     """
     df = pd.DataFrame({'High': High, 'Low': Low}, index=High.index)
     zz = ZigZagClass(pct=pct)
