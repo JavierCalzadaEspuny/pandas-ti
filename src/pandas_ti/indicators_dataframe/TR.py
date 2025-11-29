@@ -32,7 +32,12 @@ def TR(High: pd.Series, Low: pd.Series, Close: pd.Series) -> pd.Series:
 
     Examples
     --------
+    >>> # Via accessor (auto-inject)
     >>> df['TR'] = df.ti.TR()
+    >>> 
+    >>> # Direct import (explicit)
+    >>> import pandas_ti as ti
+    >>> df['TR'] = ti.TR(High=df['High'], Low=df['Low'], Close=df['Close'])
     """
     High = High.astype(float)
     Low = Low.astype(float)

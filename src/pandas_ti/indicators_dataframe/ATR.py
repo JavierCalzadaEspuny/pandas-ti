@@ -30,7 +30,12 @@ def ATR(High: pd.Series, Low: pd.Series, Close: pd.Series, n: int) -> pd.Series:
 
     Examples
     --------
+    >>> # Via accessor (auto-inject)
     >>> df['ATR_14'] = df.ti.ATR(n=14)
+    >>> 
+    >>> # Direct import (explicit)
+    >>> import pandas_ti as ti
+    >>> df['ATR_14'] = ti.ATR(High=df['High'], Low=df['Low'], Close=df['Close'], n=14)
     """
     tr = TR(High, Low, Close)
     atr = tr.rolling(window=n).mean()

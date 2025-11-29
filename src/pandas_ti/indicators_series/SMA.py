@@ -20,7 +20,12 @@ def SMA(series: pd.Series, n: int) -> pd.Series:
 
     Examples
     --------
+    >>> # Via accessor
     >>> df['SMA_14'] = df['Close'].ti.SMA(n=14)
+    >>> 
+    >>> # Direct import
+    >>> import pandas_ti as ti
+    >>> df['SMA_14'] = ti.SMA(series=df['Close'], n=14)
     """
     return series.rolling(window=n).mean()
     

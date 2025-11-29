@@ -182,9 +182,14 @@ def SRTR(
 
     Examples
     --------
+    >>> # Via accessor (auto-inject)
     >>> df['SRTR_14'] = df.ti.SRTR(n=14)
     >>> df['SRTR_14'] = df.ti.SRTR(n=14, N=500)
     >>> df['SRTR_14_iid'] = df.ti.SRTR(n=14, method='iid')
+    >>> 
+    >>> # Direct import (explicit)
+    >>> import pandas_ti as ti
+    >>> df['SRTR_14'] = ti.SRTR(High=df['High'], Low=df['Low'], Close=df['Close'], n=14)
     """
     if N <= n:
         raise ValueError("N must be greater than n.") 

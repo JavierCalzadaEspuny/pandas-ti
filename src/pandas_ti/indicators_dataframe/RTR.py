@@ -28,7 +28,12 @@ def RTR(High: pd.Series, Low: pd.Series, Close: pd.Series) -> pd.Series:
 
     Examples
     --------
+    >>> # Via accessor (auto-inject)
     >>> df['RTR'] = df.ti.RTR()
+    >>> 
+    >>> # Direct import (explicit)
+    >>> import pandas_ti as ti
+    >>> df['RTR'] = ti.RTR(High=df['High'], Low=df['Low'], Close=df['Close'])
     """
     High = High.astype(float)
     Low = Low.astype(float)

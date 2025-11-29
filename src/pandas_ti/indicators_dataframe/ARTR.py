@@ -31,7 +31,12 @@ def ARTR(High: pd.Series, Low: pd.Series, Close: pd.Series, n: int) -> pd.Series
 
     Examples
     --------
+    >>> # Via accessor (auto-inject)
     >>> df['ARTR_14'] = df.ti.ARTR(n=14)
+    >>> 
+    >>> # Direct import (explicit)
+    >>> import pandas_ti as ti
+    >>> df['ARTR_14'] = ti.ARTR(High=df['High'], Low=df['Low'], Close=df['Close'], n=14)
     """
     rtr = RTR(High, Low, Close)
     artr = rtr.rolling(window=n).mean()

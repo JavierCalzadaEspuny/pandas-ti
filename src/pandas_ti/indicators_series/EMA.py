@@ -21,6 +21,11 @@ def EMA(series: pd.Series, n: int) -> pd.Series:
 
     Examples
     --------
-    >>> EMA_14 = df['Close'].ti.EMA(n=14)
+    >>> # Via accessor
+    >>> df['EMA_14'] = df['Close'].ti.EMA(n=14)
+    >>> 
+    >>> # Direct import
+    >>> import pandas_ti as ti
+    >>> df['EMA_14'] = ti.EMA(series=df['Close'], n=14)
     """
     return series.ewm(span=n, adjust=False).mean()
