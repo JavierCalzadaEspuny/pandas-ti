@@ -19,6 +19,9 @@ def auto_import_package(package):
 auto_import_package(indicators_dataframe)
 auto_import_package(indicators_series)
 
+# Import special classes for manual usage (AFTER auto_import to avoid circular imports)
+from .indicators_dataframe.ZigZag import ZigZagClass
+
 
 # Expose all registered indicators at package level for direct import
 # This allows: import pandas_ti as ti; ti.SMA(...)
@@ -56,5 +59,6 @@ __all__ = [
     'SeriesTechnicalIndicatorsAccessor', 
     'DataframeTechnicalIndicatorsAccessor', 
     'registry_funcs_dict', 
-    'registry_names_dict'
+    'registry_names_dict',
+    'ZigZagClass'
 ]

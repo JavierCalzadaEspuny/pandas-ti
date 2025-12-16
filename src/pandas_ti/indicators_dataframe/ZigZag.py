@@ -324,7 +324,7 @@ class ZigZagClass:
         df = pd.DataFrame(self._historic_dic).set_index('index')
         
         # Add type column (confirmed vs candidate)
-        df['type'] = np.nan
+        df['type'] = pd.Series(dtype='object')
         confirmed_mask = df['pivot'].notna()
         df.loc[confirmed_mask, 'type'] = 'confirmed'
         
@@ -382,16 +382,14 @@ def ZigZag(High: pd.Series, Low: pd.Series, pct: float) -> 'ZigZagClass':
 
     Examples
     --------
-    >>> # Via accessor
+    >>> # Via accessor (auto-inject)
     >>> zz = df.ti.ZigZag(pct=0.05)
-    >>> df['pivots'] = zz.series()
-    >>> df['pivots_live'] = zz.series(include_candidate=True)
-    >>> pivot_df = zz.dataframe()
-    >>> 
-    >>> # Direct import
-    >>> import pandas_ti as ti
-    >>> zz = ti.ZigZag(High=df['High'], Low=df['Low'], pct=0.05)
-    >>> df['pivots'] = zz.series()
+    >>> # Extract pivots as Series
+    >>> df['confirmed_pivots'] = zz.series()
+    >>> df['all_pivots'] = zz.series(include_candidate=True)
+    >>> # Extract DataFrame with metadata
+    >>> df_zz = zz.dataframe()
+    >>> df_zz = zz.dataframe(include_candidate=True)
     """
     df = pd.DataFrame({'High': High, 'Low': Low}, index=High.index)
     zz = ZigZagClass(pct=pct)

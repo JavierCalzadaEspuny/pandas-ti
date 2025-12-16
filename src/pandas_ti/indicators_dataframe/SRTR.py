@@ -7,7 +7,76 @@ from typing import Literal
 from ..registry import register_indicator
 
 
-def _SRTR_iid(RTR: pd.Series, n:int, N: int, expand: bool, full: bool = False):
+class SRTRClass:
+    """
+    Standardized Relative True Range (SRTR) Class
+    
+    A stateful class that computes and stores SRTR components, providing
+    multiple access methods similar to ZigZagClass.
+    
+    Attributes
+    ----------
+    rtr : pd.Series
+        Relative True Range values
+    mu_N : pd.Series
+        Long-term historical mean of log(RTR)
+    sigma : pd.Series
+        Standard deviation (HAC-adjusted if method='cluster')
+    mu_n : pd.Series
+        Short-term rolling mean of log(RTR)
+    z_score : pd.Series
+        Standardized z-score
+    percentile : pd.Series
+        Percentile values (0-1)
+    
+    Methods
+    -------
+    series()
+        Return percentile values as Series
+    dataframe()
+        Return complete DataFrame with all components
+    """
+    
+    def __init__(self, rtr: pd.Series, mu_N: pd.Series, sigma: pd.Series, 
+                 mu_n: pd.Series, z_score: pd.Series, percentile: pd.Series):
+        self.rtr = rtr
+        self.mu_N = mu_N
+        self.sigma = sigma
+        self.mu_n = mu_n
+        self.z_score = z_score
+        self.percentile = percentile
+    
+    def series(self) -> pd.Series:
+        """
+        Return percentile values as Series.
+        
+        Returns
+        -------
+        pd.Series
+            Percentile values (0-1)
+        """
+        return self.percentile
+    
+    def dataframe(self) -> pd.DataFrame:
+        """
+        Return complete SRTR data as DataFrame.
+        
+        Returns
+        -------
+        pd.DataFrame
+            DataFrame with columns: RTR, mu_N, sigma, mu_n, z_score, percentile
+        """
+        return pd.DataFrame({
+            'RTR': self.rtr,
+            'mu_N': self.mu_N,
+            'sigma': self.sigma,
+            'mu_n': self.mu_n,
+            'z_score': self.z_score,
+            'percentile': self.percentile
+        }, index=self.rtr.index)
+
+
+def _SRTR_iid(RTR: pd.Series, n:int, N: int, expand: bool) -> pd.DataFrame:
     """
     Standardize rolling mean of log(Relative True Range) under the i.i.d. assumption.
     """
@@ -33,12 +102,9 @@ def _SRTR_iid(RTR: pd.Series, n:int, N: int, expand: bool, full: bool = False):
     df['z_score'] = (df['mu_n'] - df['mu_N']) / (df['sigma'] / np.sqrt(n))
 
     # 5. Map to percentile (p value)
-    df['p'] = norm.cdf(df['z_score'])
+    df['percentile'] = norm.cdf(df['z_score'])
 
-    if full:
-        return df[["RTR", "mu_N", "sigma", "mu_n", "z_score", "p"]]
-    else:
-        return df["p"]
+    return df[["RTR", "mu_N", "sigma", "mu_n", "z_score", "percentile"]]
 
 
 
@@ -77,7 +143,7 @@ def _hac_variance(hist: np.ndarray, mu: float, L: int, n: int) -> float:
     return variance
 
 
-def _SRTR_cluster(RTR: pd.Series, n: int, N: int = 1000, expand: bool = True, full: bool = False):
+def _SRTR_cluster(RTR: pd.Series, n: int, N: int = 1000, expand: bool = True) -> pd.DataFrame:
     """
     Volatility metric using rolling arithmetic mean of log(RTR) with HAC / Newey-West adjustment.
 
@@ -123,12 +189,9 @@ def _SRTR_cluster(RTR: pd.Series, n: int, N: int = 1000, expand: bool = True, fu
     df.loc[mask, 'z_score'] = (df.loc[mask, 'mu_n'] - df.loc[mask, 'mu_N']) / df.loc[mask, 'sigma']
 
     # 5. Percentile
-    df['p'] = norm.cdf(df['z_score'])
+    df['percentile'] = norm.cdf(df['z_score'])
 
-    if not full:
-        return df['p']
-    else:
-        return df[["RTR", "mu_N", "sigma", "mu_n", "z_score", "p"]]
+    return df[["RTR", "mu_N", "sigma", "mu_n", "z_score", "percentile"]]
 
 
 
@@ -139,10 +202,9 @@ def SRTR(
     Close: pd.Series,
     n: int,
     N: int = 1000,
-    expand: bool = True,
-    method: Literal['iid', 'cluster'] = "cluster",
-    full: bool = False
-    ):
+    expand: bool = False,
+    method: Literal['iid', 'cluster'] = "cluster"
+    ) -> SRTRClass:
     """
     Standardized Relative True Range (SRTR)
 
@@ -164,32 +226,33 @@ def SRTR(
         Short-term window for rolling mean (typical: 7-30).
     N : int, default 1000
         Long-term window for historical mean/std. Should be >> n.
-    expand : bool, default True
+    expand : bool, default False
         If True, use expanding window after N periods.
         If False, fixed rolling window.
     method : {'iid', 'cluster'}, default 'cluster'
         - 'iid': Assumes i.i.d., uses sigma/sqrt(n). Faster but less accurate.
         - 'cluster': HAC/Newey-West variance estimator. Accounts for autocorrelation.
-    full : bool, default False
-        If True, return DataFrame with all calculations.
-        If False, return percentile Series.
 
     Returns
     -------
-    SRTR : pd.Series or pd.DataFrame
-        If full=False: Series of percentiles (0-1).
-        If full=True: DataFrame with columns ['RTR', 'mu_N', 'sigma', 'mu_n', 'z_score', 'p'].
+    SRTRClass
+        Stateful SRTR instance with extraction methods:
+        - .series() : Returns percentile values
+        - .dataframe() : Returns complete DataFrame with all components
+        - Direct attributes: .percentile, .z_score, .mu_n, .mu_N, .sigma, .rtr
 
     Examples
     --------
     >>> # Via accessor (auto-inject)
-    >>> df['SRTR_14'] = df.ti.SRTR(n=14)
-    >>> df['SRTR_14'] = df.ti.SRTR(n=14, N=500)
-    >>> df['SRTR_14_iid'] = df.ti.SRTR(n=14, method='iid')
+    >>> srtr = df.ti.SRTR(n=14)
+    >>> df['percentile'] = srtr.series()
+    >>> df['z_score'] = srtr.z_score
+    >>> full_data = srtr.dataframe()
     >>> 
     >>> # Direct import (explicit)
-    >>> import pandas_ti as ti
-    >>> df['SRTR_14'] = ti.SRTR(High=df['High'], Low=df['Low'], Close=df['Close'], n=14)
+    >>> from pandas_ti import SRTR
+    >>> srtr = SRTR(High=df['High'], Low=df['Low'], Close=df['Close'], n=14)
+    >>> df['percentile'] = srtr.percentile
     """
     if N <= n:
         raise ValueError("N must be greater than n.") 
@@ -202,8 +265,18 @@ def SRTR(
         raise ValueError("Length of series must be >= N.")
 
     if n == 1 or method == "iid":
-        return _SRTR_iid(rtr, n, N, expand, full)
+        df = _SRTR_iid(rtr, n, N, expand)
     elif method == "cluster":
-        return _SRTR_cluster(rtr, n, N, expand, full)
+        df = _SRTR_cluster(rtr, n, N, expand)
+    
+    # Create and return SRTRClass instance
+    return SRTRClass(
+        rtr=df['RTR'],
+        mu_N=df['mu_N'],
+        sigma=df['sigma'],
+        mu_n=df['mu_n'],
+        z_score=df['z_score'],
+        percentile=df['percentile']
+    )
 
 
